@@ -82,6 +82,10 @@ OPTIONS
             Prefer the older AVC codec over AV1. Results in bigger file-sizes, but  better
             playback compatibility. Ignored when -v and -m are not specified.
 
+      -e HEADER
+            Add a custom HTTP request header. Can be repeated for multiple headers. Format:
+            \"Name:Value\", e.g. \"Authorization:Bearer <token>\".
+
       -H
             Prefer HDR streams. Tested on YouTube videos. Overrides -m.
 
@@ -111,6 +115,7 @@ All rights reserved."
   local MP4=false
   local AVC=false
   local HDR=false
+  local EXTRA_HEADERS=()
   local URLS=()
   local CODECS=$(ffmpeg -codecs -hide_banner)
   if echo ${CODECS} | grep -q 'aac_at'; then
@@ -131,7 +136,7 @@ All rights reserved."
   if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
     set -- "-h"
   fi
-  while getopts ":hUsSfvcD:pka:r:P:mMAH" opt; do
+  while getopts ":hUsSfvcD:pka:r:P:e:mMAH" opt; do
     case $opt in
       h)
         echo "$usage"
@@ -221,6 +226,9 @@ All rights reserved."
             ;;
         esac
         ;;
+      e)
+        EXTRA_HEADERS+=("--add-header" "$OPTARG")
+        ;;
       m)
         MP4=true
         ;;
@@ -282,6 +290,9 @@ All rights reserved."
     BASE_OPTIONS+=(--force-overwrites)
   fi
   BASE_OPTIONS+=(--add-metadata --metadata-from-title "%(artist)s - %(title)s")
+  if [ ${#EXTRA_HEADERS[@]} -gt 0 ]; then
+    BASE_OPTIONS+=("${EXTRA_HEADERS[@]}")
+  fi
   if $PLAYLIST; then
     BASE_OPTIONS+=(--yes-playlist)
   else
